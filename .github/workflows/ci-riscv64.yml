@@ -18,6 +18,7 @@ jobs:
     timeout-minutes: 60
     env:
       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      NODE_OPTIONS: --max-old-space-size=4096
     steps:
       - name: Checkout code
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
@@ -38,20 +39,26 @@ jobs:
           uname -m
           python3 --version
           gcc --version | head -1
+          free -h
+          df -h .
+          ulimit -v || true
 
       - name: Install dependencies
         run: |
-          npm install --legacy-peer-deps --ignore-scripts || {
-            echo "=== npm install failed — dumping debug log ==="
-            cat ~/.npm/_logs/*.log 2>/dev/null | tail -100
+          npm install --legacy-peer-deps --ignore-scripts --no-audit || {
+            echo "=== npm install failed — error entries ==="
+            grep "^[0-9]* error " ~/.npm/_logs/*.log 2>/dev/null
+            echo "=== last 20 non-fetch lines ==="
+            grep -v "http fetch\|warn deprecated\|warn EBAD" \
+              ~/.npm/_logs/*.log 2>/dev/null | tail -20
             exit 1
           }
 
       - name: Rebuild native addons
         run: |
           npm rebuild serialport || {
-            echo "=== npm rebuild serialport failed — dumping debug log ==="
-            cat ~/.npm/_logs/*.log 2>/dev/null | tail -100
+            echo "=== npm rebuild serialport failed — error entries ==="
+            grep "^[0-9]* error " ~/.npm/_logs/*.log 2>/dev/null
             exit 1
           }
 
