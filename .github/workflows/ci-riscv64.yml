@@ -38,12 +38,9 @@ jobs:
           uname -m
 
       - name: Install dependencies
-        run: |
-          npm install --legacy-peer-deps 2>&1 || {
-            echo "=== npm debug log ==="
-            cat ~/.npm/_logs/*.log 2>/dev/null | tail -200
-            exit 1
-          }
+        env:
+          ELECTRON_SKIP_BINARY_DOWNLOAD: "1"
+        run: npm install --legacy-peer-deps
 
       - name: Build server
         run: npm run build-prod
