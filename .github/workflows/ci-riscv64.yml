@@ -1,0 +1,71 @@
+name: ci-riscv64
+
+on:
+  push:
+    branches:
+      - master
+    tags:
+      - '*'
+  pull_request:
+    branches:
+      - master
+  workflow_dispatch:
+
+jobs:
+  build-server-riscv64:
+    name: server (linux/riscv64)
+    runs-on: ubuntu-24.04-riscv
+    timeout-minutes: 60
+    env:
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+
+      - name: Install Node.js and Yarn
+        run: |
+          sudo apt-get update -y
+          sudo apt-get install -y nodejs npm
+          sudo npm install -g yarn
+          node --version
+          yarn --version
+
+      - name: Environment info
+        run: |
+          echo "RUNNER_ARCH=$RUNNER_ARCH"
+          echo "RUNNER_NAME=$RUNNER_NAME"
+          echo "RUNNER_OS=$RUNNER_OS"
+          uname -m
+
+      - name: Install dependencies
+        run: yarn install
+
+      - name: Build server
+        run: yarn build-prod
+
+      - name: Smoke-test server binary
+        run: timeout 10 node ./bin/cncjs --help || true
+
+      - name: Package server tarball
+        run: |
+          PACKAGE_NAME=$(node -p "require('./src/package.json').name")
+          PACKAGE_VERSION=$(node -p "require('./src/package.json').version")
+          TARBALL="${PACKAGE_NAME}-${PACKAGE_VERSION}-linux-riscv64-server.tar.gz"
+          mkdir -p releases/riscv64
+          tar -czf "releases/riscv64/${TARBALL}" \
+            bin/ dist/ static/ package.json
+          ls -lh releases/riscv64/
+
+      - name: Upload server tarball
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: cncjs-server-linux-riscv64
+          path: releases/riscv64/
+
+      - name: Release
+        uses: softprops/action-gh-release@a06a81a03ee405af7f2048a818ed3f03bbf83c7b
+        if: startsWith(github.ref, 'refs/tags/')
+        with:
+          files: releases/riscv64/*
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
