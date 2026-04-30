@@ -22,13 +22,12 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
 
-      - name: Install Node.js and Yarn
+      - name: Install Node.js
         run: |
           sudo apt-get update -y
           sudo apt-get install -y nodejs npm
-          sudo npm install -g yarn
           node --version
-          yarn --version
+          npm --version
 
       - name: Environment info
         run: |
@@ -38,13 +37,19 @@ jobs:
           uname -m
 
       - name: Install dependencies
-        run: yarn install
+        run: npm install --legacy-peer-deps
 
       - name: Build server
-        run: yarn build-prod
+        run: npm run build-prod
 
       - name: Smoke-test server binary
         run: timeout 10 node ./bin/cncjs --help || true
+
+      - name: Log Node.js and build info
+        run: |
+          echo "Node.js: $(node --version)"
+          echo "npm: $(npm --version)"
+          ls -lh dist/cncjs/ 2>/dev/null || echo "dist/cncjs not found"
 
       - name: Package server tarball
         run: |
