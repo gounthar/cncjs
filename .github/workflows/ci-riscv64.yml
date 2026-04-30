@@ -25,7 +25,7 @@ jobs:
       - name: Install Node.js
         run: |
           sudo apt-get update -y
-          sudo apt-get install -y nodejs npm
+          sudo apt-get install -y nodejs npm python3 build-essential
           sudo npm install -g npm@10
           node --version
           npm --version
@@ -36,11 +36,24 @@ jobs:
           echo "RUNNER_NAME=$RUNNER_NAME"
           echo "RUNNER_OS=$RUNNER_OS"
           uname -m
+          python3 --version
+          gcc --version | head -1
 
       - name: Install dependencies
         run: |
-          npm install --legacy-peer-deps --ignore-scripts
-          npm rebuild serialport
+          npm install --legacy-peer-deps --ignore-scripts || {
+            echo "=== npm install failed — dumping debug log ==="
+            cat ~/.npm/_logs/*.log 2>/dev/null | tail -100
+            exit 1
+          }
+
+      - name: Rebuild native addons
+        run: |
+          npm rebuild serialport || {
+            echo "=== npm rebuild serialport failed — dumping debug log ==="
+            cat ~/.npm/_logs/*.log 2>/dev/null | tail -100
+            exit 1
+          }
 
       - name: Build server
         run: npm run build-prod
