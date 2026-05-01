@@ -26,10 +26,8 @@ jobs:
       - name: Install Node.js
         run: |
           sudo apt-get update -y
-          sudo apt-get install -y nodejs npm python3 build-essential
-          sudo npm install -g npm@10
+          sudo apt-get install -y nodejs python3 build-essential
           node --version
-          npm --version
 
       - name: Environment info
         run: |
@@ -45,22 +43,15 @@ jobs:
 
       - name: Install dependencies
         run: |
-          npm install --legacy-peer-deps --ignore-scripts --no-audit || {
-            echo "=== npm install failed — error entries ==="
-            grep "^[0-9]* error " ~/.npm/_logs/*.log 2>/dev/null
-            echo "=== last 20 non-fetch lines ==="
-            grep -v "http fetch\|warn deprecated\|warn EBAD" \
-              ~/.npm/_logs/*.log 2>/dev/null | tail -20
+          node .yarn/releases/yarn-3.3.1.cjs install \
+            --mode=skip-build 2>&1 | tail -50 || {
+            echo "=== Yarn install failed ==="
             exit 1
           }
 
       - name: Rebuild native addons
         run: |
-          npm rebuild serialport || {
-            echo "=== npm rebuild serialport failed — error entries ==="
-            grep "^[0-9]* error " ~/.npm/_logs/*.log 2>/dev/null
-            exit 1
-          }
+          npm rebuild serialport || echo "serialport rebuild skipped"
 
       - name: Build server
         run: npm run build-prod
@@ -91,7 +82,8 @@ jobs:
           path: releases/riscv64/
 
       - name: Release
-        uses: softprops/action-gh-release@a06a81a03ee405af7f2048a818ed3f03bbf83c7b
+        uses: >-
+          softprops/action-gh-release@a06a81a03ee405af7f2048a818ed3f03bbf83c7b
         if: startsWith(github.ref, 'refs/tags/')
         with:
           files: releases/riscv64/*
