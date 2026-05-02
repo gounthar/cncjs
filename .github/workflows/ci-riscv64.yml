@@ -14,7 +14,7 @@ on:
 jobs:
   build-server-riscv64:
     name: server (linux/riscv64)
-    runs-on: ubuntu-24.04-riscv
+    runs-on: [self-hosted, linux, riscv64, bananapi-f3]
     timeout-minutes: 60
     env:
       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
