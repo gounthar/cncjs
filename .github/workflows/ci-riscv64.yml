@@ -27,7 +27,7 @@ jobs:
       - name: Install Node.js
         run: |
           sudo apt-get update -y
-          sudo apt-get install -y nodejs python3 build-essential
+          sudo apt-get install -y nodejs npm python3 build-essential
           node --version
 
       - name: Environment info
