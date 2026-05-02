@@ -19,8 +19,7 @@ jobs:
     env:
       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       NODE_OPTIONS: --max-old-space-size=4096
-      YARN_ENABLE_IMMUTABLE_INSTALLS: "true"
-      YARN_CHECKSUM_BEHAVIOR: ignore
+      ELECTRON_SKIP_BINARY_DOWNLOAD: "1"
     steps:
       - name: Checkout code
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
@@ -44,17 +43,13 @@ jobs:
           ulimit -v || true
 
       - name: Install dependencies
-        run: |
-          node .yarn/releases/yarn-3.3.1.cjs install \
-            --mode=skip-build --immutable
+        run: npm install --ignore-scripts --no-audit --no-fund
 
       - name: Rebuild native addons
-        run: |
-          node .yarn/releases/yarn-3.3.1.cjs rebuild serialport || \
-            echo "serialport rebuild skipped"
+        run: npm rebuild serialport || echo "serialport rebuild skipped"
 
       - name: Build server
-        run: node .yarn/releases/yarn-3.3.1.cjs run build-prod
+        run: npm run build-prod
 
       - name: Smoke-test server binary
         run: timeout 10 node ./bin/cncjs --help || true
@@ -62,7 +57,7 @@ jobs:
       - name: Log Node.js and build info
         run: |
           echo "Node.js: $(node --version)"
-          echo "yarn: $(node .yarn/releases/yarn-3.3.1.cjs --version)"
+          echo "npm: $(npm --version)"
           ls -lh dist/cncjs/ 2>/dev/null || echo "dist/cncjs not found"
 
       - name: Package server tarball
